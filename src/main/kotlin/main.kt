@@ -1,16 +1,13 @@
-import androidx.compose.runtime.*
-import org.jetbrains.compose.web.dom.Button
-import org.jetbrains.compose.web.dom.Div
-import org.jetbrains.compose.web.dom.Text
 import org.jetbrains.compose.web.renderComposable
+import ui.App
 
 fun main() {
     renderComposable(rootElementId = "root") {
-        Body()
+        App()
     }
 }
 
-@Composable
+/*@Composable
 fun Body() {
     var counter by remember { mutableStateOf(0) }
     Div {
@@ -25,4 +22,4 @@ fun Body() {
     ) {
         Text("Click")
     }
-}
+}*/
