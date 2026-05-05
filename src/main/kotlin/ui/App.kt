@@ -11,13 +11,10 @@ import game.checkWinner
 import game.createBoard
 import game.dropPiece
 import game.isDraw
-import kotlinx.coroutines.coroutineScope
+import kotlinx.browser.localStorage
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.attributes.InputType
-import org.jetbrains.compose.web.attributes.width
 import org.jetbrains.compose.web.css.AlignItems
-import org.jetbrains.compose.web.css.CSSColorValue
 import org.jetbrains.compose.web.css.Color
 import org.jetbrains.compose.web.css.DisplayStyle
 import org.jetbrains.compose.web.css.FlexDirection
@@ -64,13 +61,60 @@ fun App() {
     fun resetGame() {
         isMenu = true
         winner = Cell.EMPTY
-        draw = false;
+        draw = false
         player = Cell.RED
         board = null
         rows = "6"
         columns = "7"
         connectTarget = "4"
         error = ""
+        localStorage.removeItem("connect4-save")
+    }
+
+    fun saveGame() {
+        val boardString = board
+            ?.joinToString("|") { row ->
+                row.joinToString(",") { cell ->
+                    cell.name
+                }
+            } ?: ""
+
+        val saveString = listOf(
+            rows,
+            columns,
+            connectTarget,
+            player.name,
+            winner.name,
+            draw.toString(),
+            isMenu.toString(),
+            boardString
+        ).joinToString(";")
+
+        localStorage.setItem("connect4-save", saveString)
+    }
+
+    fun loadGame() {
+        val saved = localStorage.getItem("connect4-save") ?: return
+        val parts = saved.split(";")
+
+        rows = parts[0]
+        columns = parts[1]
+        connectTarget = parts[2]
+        player = Cell.valueOf(parts[3])
+        winner = Cell.valueOf(parts[4])
+        draw = parts[5].toBoolean()
+        isMenu = parts[6].toBoolean()
+
+        val boardString :String  = parts[7]
+        board = boardString.split("|").map { rowString ->
+            rowString.split(",").map { cellString ->
+                Cell.valueOf(cellString)
+            }.toMutableList()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        loadGame()
     }
 
     if(winner != Cell.EMPTY) {
@@ -78,7 +122,7 @@ fun App() {
             delay(3000)
             resetGame()
         }
-    } else if(draw == true) {
+    } else if(draw) {
         LaunchedEffect(draw) {
             delay(3000)
             resetGame()
@@ -133,6 +177,7 @@ fun App() {
             Div {
                 Button(attrs = {
                     onClick {
+                        saveGame()
                         val rowsInt = rows.toIntOrNull() ?: 0
                         val columnsInt = columns.toIntOrNull() ?: 0
                         val connectTargetInt = connectTarget.toIntOrNull() ?: 0
@@ -187,6 +232,7 @@ fun App() {
                     draw = true
                 }
             }
+            saveGame()
         }, draw = draw)
     }
 }
