@@ -46,6 +46,7 @@ const val TARGET_MAX = 10
 @Composable
 fun App() {
     var winner by remember { mutableStateOf(Cell.EMPTY) }
+    var draw by remember {mutableStateOf(false)}
     var player by remember{ mutableStateOf(Cell.RED)}
     var board : List<MutableList<Cell>>? by remember { mutableStateOf(null) }
     var isMenu by remember { mutableStateOf(true) }
@@ -54,19 +55,30 @@ fun App() {
     var connectTarget by remember{ mutableStateOf("4")}
     var error by remember{ mutableStateOf("")}
 
+    fun resetGame() {
+        isMenu = true
+        winner = Cell.EMPTY
+        draw = false;
+        player = Cell.RED
+        board = null
+        rows = "6"
+        columns = "7"
+        connectTarget = "4"
+        error = ""
+    }
+
     if (winner != Cell.EMPTY) {
         LaunchedEffect(winner) {
             delay(3000)
-            isMenu = true
-            winner = Cell.EMPTY
-            player = Cell.RED
-            board = null
-            rows = "6"
-            columns = "7"
-            connectTarget = "4"
-            error = ""
+            resetGame()
+        }
+    }else if(draw == true){
+        LaunchedEffect(draw) {
+            delay(3000)
+            resetGame()
         }
     }
+
 
     if(isMenu) {
         Div {
@@ -86,7 +98,6 @@ fun App() {
                 onInput { columns = it.value?.toString() ?: "" }
             }
         }
-
         Div {
             H2 { Text("Win Condition") }
         }
@@ -125,28 +136,35 @@ fun App() {
         }
         Div { Text(error) }
     } else {
-        Game(board,player, onColumnClick = { column ->
+        Game(board,player, onButtonClick = {resetGame()}, onColumnClick = { column ->
             board?.let {
-                if (dropPiece(it, column, player)) {
-                    winner = checkWinner(it,connectTarget.toInt())
+                val nextBoard = it.map { row -> row.toMutableList() } // assigned a new board reference so compose picks up the change
+                if (dropPiece(nextBoard, column, player)) {
+                    winner = checkWinner(nextBoard,connectTarget.toInt())
                     if(winner != Cell.EMPTY) {
-                        for(row in it.indices){
-                            for(column in it[row].indices){
-                                it[row][column] = winner
+                        for(row in nextBoard.indices){
+                            for(column in nextBoard[row].indices){
+                                nextBoard[row][column] = winner
                             }
                         }
-
                     }
+                    board = nextBoard
+                    if(winner == Cell.EMPTY)
                     player = if (player == Cell.RED) Cell.YELLOW else Cell.RED
                 }
-                if(isDraw(it) && winner == Cell.EMPTY) isMenu = true
+                if(isDraw(nextBoard) && winner == Cell.EMPTY) {
+                    draw = true
+                }
             }
         })
     }
 }
 
 @Composable
-private fun Game(board: List<MutableList<Cell>>?, player: Cell,onColumnClick: (Int) -> Unit) {
+private fun Game(board: List<MutableList<Cell>>?, player: Cell,onColumnClick: (Int) -> Unit,onButtonClick: () -> Unit) {
+    Div { Button(attrs = {
+        onClick { onButtonClick() }
+    }){Text("Back To Main Menu")} }
     Div {
         board?.forEach { row ->
             Div(attrs = {
