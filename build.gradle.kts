@@ -28,5 +28,10 @@ kotlin {
                 implementation(compose.runtime)
             }
         }
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }
