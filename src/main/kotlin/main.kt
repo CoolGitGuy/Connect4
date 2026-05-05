@@ -6,20 +6,3 @@ fun main() {
         App()
     }
 }
-
-/*@Composable
-fun Body() {
-    var counter by remember { mutableStateOf(0) }
-    Div {
-        Text("Clicked: ${counter}")
-    }
-    Button(
-        attrs = {
-            onClick { _ ->
-                counter++
-            }
-        }
-    ) {
-        Text("Click")
-    }
-}*/
