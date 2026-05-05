@@ -1,6 +1,7 @@
 package ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -9,6 +10,10 @@ import game.Cell
 import game.checkWinner
 import game.createBoard
 import game.dropPiece
+import game.isDraw
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.CSSColorValue
 import org.jetbrains.compose.web.css.Color
@@ -40,6 +45,7 @@ const val TARGET_MAX = 10
 
 @Composable
 fun App() {
+    var winner by remember { mutableStateOf(Cell.EMPTY) }
     var player by remember{ mutableStateOf(Cell.RED)}
     var board : List<MutableList<Cell>>? by remember { mutableStateOf(null) }
     var isMenu by remember { mutableStateOf(true) }
@@ -47,6 +53,20 @@ fun App() {
     var columns by remember{ mutableStateOf("7")}
     var connectTarget by remember{ mutableStateOf("4")}
     var error by remember{ mutableStateOf("")}
+
+    if (winner != Cell.EMPTY) {
+        LaunchedEffect(winner) {
+            delay(3000)
+            isMenu = true
+            winner = Cell.EMPTY
+            player = Cell.RED
+            board = null
+            rows = "6"
+            columns = "7"
+            connectTarget = "4"
+            error = ""
+        }
+    }
 
     if(isMenu) {
         Div {
@@ -108,10 +128,18 @@ fun App() {
         Game(board,player, onColumnClick = { column ->
             board?.let {
                 if (dropPiece(it, column, player)) {
-                    val winner = checkWinner(it,connectTarget.toInt())
-                    if(winner != Cell.EMPTY) isMenu = true
-                    if (player == Cell.RED) player = Cell.YELLOW else player = Cell.RED
+                    winner = checkWinner(it,connectTarget.toInt())
+                    if(winner != Cell.EMPTY) {
+                        for(row in it.indices){
+                            for(column in it[row].indices){
+                                it[row][column] = winner
+                            }
+                        }
+
+                    }
+                    player = if (player == Cell.RED) Cell.YELLOW else Cell.RED
                 }
+                if(isDraw(it) && winner == Cell.EMPTY) isMenu = true
             }
         })
     }
@@ -127,8 +155,11 @@ private fun Game(board: List<MutableList<Cell>>?, player: Cell,onColumnClick: (I
                 }
             }) {
                 row.forEachIndexed { columnIndex,cell ->
-                    val color: CSSColorValue =
-                        if (cell == Cell.EMPTY) Color.gray else (if (cell == Cell.RED) Color.red else Color.yellow)
+                    val color = when (cell) {
+                        Cell.EMPTY -> Color.gray
+                        Cell.RED -> Color.red
+                        else -> Color.yellow
+                    }
                     Div(attrs = {
                         style {
                             width(40.px)
@@ -143,5 +174,4 @@ private fun Game(board: List<MutableList<Cell>>?, player: Cell,onColumnClick: (I
             }
         }
     }
-    Div{ Text(player.name)}
 }

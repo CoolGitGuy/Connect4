@@ -33,6 +33,10 @@ fun checkWinner(board: List<MutableList<Cell>>,requirement : Int) : Cell{
     return Cell.EMPTY
 }
 
+fun isDraw(board: List<MutableList<Cell>>) : Boolean{
+    return board[0].all { it != Cell.EMPTY }
+}
+
 fun hasLine(startRow: Int, startColumn: Int,rowStep: Int,colStep:Int,board: List<MutableList<Cell>>,requirement : Int) : Boolean{
     val value : Cell =  board[startRow][startColumn]
     if(value == Cell.EMPTY)
@@ -52,8 +56,4 @@ fun hasLine(startRow: Int, startColumn: Int,rowStep: Int,colStep:Int,board: List
         searchColumn += colStep
     }
     return true
-}
-
-fun isDraw(board: List<MutableList<Cell>>) : Boolean{
-    return board[0].all { it != Cell.EMPTY }
 }
