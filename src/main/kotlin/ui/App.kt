@@ -105,7 +105,7 @@ fun App() {
         draw = parts[5].toBoolean()
         isMenu = parts[6].toBoolean()
 
-        val boardString :String  = parts[7]
+        val boardString: String = parts[7]
         board = boardString.split("|").map { rowString ->
             rowString.split(",").map { cellString ->
                 Cell.valueOf(cellString)
@@ -117,12 +117,12 @@ fun App() {
         loadGame()
     }
 
-    if(winner != Cell.EMPTY) {
+    if (winner != Cell.EMPTY) {
         LaunchedEffect(winner) {
             delay(3000)
             resetGame()
         }
-    } else if(draw) {
+    } else if (draw) {
         LaunchedEffect(draw) {
             delay(3000)
             resetGame()
@@ -130,7 +130,7 @@ fun App() {
     }
 
 
-    if(isMenu) {
+    if (isMenu) {
         Div(attrs = {
             style {
                 display(DisplayStyle.Flex)
@@ -183,13 +183,13 @@ fun App() {
                         val connectTargetInt = connectTarget.toIntOrNull() ?: 0
 
 
-                        if(rowsInt !in ROWS_MIN..ROWS_MAX)
+                        if (rowsInt !in ROWS_MIN..ROWS_MAX)
                             error = "Rows cannot be less than $ROWS_MIN and more than $ROWS_MAX"
-                        else if(columnsInt !in COLUMNS_MIN..COLUMNS_MAX)
+                        else if (columnsInt !in COLUMNS_MIN..COLUMNS_MAX)
                             error = "Columns cannot be less than $COLUMNS_MIN and more than $COLUMNS_MAX"
-                        else if(connectTargetInt !in TARGET_MIN..TARGET_MAX)
+                        else if (connectTargetInt !in TARGET_MIN..TARGET_MAX)
                             error = "Target cannot be less than Connect $TARGET_MIN and more than Connect $TARGET_MAX"
-                        else if(connectTargetInt > columnsInt && connectTargetInt > rowsInt)
+                        else if (connectTargetInt > columnsInt && connectTargetInt > rowsInt)
                             error = "Target is impossible to reach"
                         else {
                             error = ""
@@ -205,14 +205,14 @@ fun App() {
         }
     } else {
         Game(board, player, onButtonClick = { resetGame() }, onColumnClick = { column ->
-            if(draw || winner != Cell.EMPTY) return@Game
+            if (draw || winner != Cell.EMPTY) return@Game
 
             board?.let {
                 val nextBoard =
                     it.map { row -> row.toMutableList() } // assigned a new board reference so compose picks up the change
-                if(dropPiece(nextBoard, column, player)) {
+                if (dropPiece(nextBoard, column, player)) {
                     winner = checkWinner(nextBoard, connectTarget.toInt())
-                    if(winner != Cell.EMPTY) {
+                    if (winner != Cell.EMPTY) {
                         for (row in nextBoard.indices) {
                             for (column in nextBoard[row].indices) {
                                 nextBoard[row][column] = winner
@@ -220,10 +220,10 @@ fun App() {
                         }
                     }
                     board = nextBoard
-                    if(winner == Cell.EMPTY)
-                        player = if(player == Cell.RED) Cell.YELLOW else Cell.RED
+                    if (winner == Cell.EMPTY)
+                        player = if (player == Cell.RED) Cell.YELLOW else Cell.RED
                 }
-                if(isDraw(nextBoard) && winner == Cell.EMPTY) {
+                if (isDraw(nextBoard) && winner == Cell.EMPTY) {
                     for (row in nextBoard.indices) {
                         for (column in nextBoard[row].indices) {
                             nextBoard[row][column] = Cell.EMPTY
@@ -294,5 +294,5 @@ private fun Game(
             display(DisplayStyle.Flex)
             justifyContent(JustifyContent.Center)
         }
-    }) { Text(if(draw) "Game ended in a draw" else "Current player: ${player.name}") }
+    }) { Text(if (draw) "Game ended in a draw" else "Current player: ${player.name}") }
 }
