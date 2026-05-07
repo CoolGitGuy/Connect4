@@ -11,7 +11,6 @@ import game.checkWinner
 import game.createBoard
 import game.dropPiece
 import game.isDraw
-import kotlinx.browser.localStorage
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.AlignItems
@@ -36,6 +35,7 @@ import org.jetbrains.compose.web.dom.H2
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Text
 import persistance.SavedGame
+import persistance.clearSavedGame
 import persistance.loadGame
 import persistance.saveGame
 
@@ -48,30 +48,49 @@ const val COLUMNS_MAX = 20
 const val TARGET_MIN = 4
 const val TARGET_MAX = 10
 
+data class GameState(
+    val board: List<MutableList<Cell>>?,
+    val player: Cell,
+    val winner: Cell,
+    val draw: Boolean,
+    val rows: String,
+    val columns: String,
+    val connectTarget: String,
+    val isMenu: Boolean,
+    val error: String
+)
 
 @Composable
 fun App() {
-    var winner by remember { mutableStateOf(Cell.EMPTY) }
-    var draw by remember { mutableStateOf(false) }
-    var player by remember { mutableStateOf(Cell.RED) }
-    var board: List<MutableList<Cell>>? by remember { mutableStateOf(null) }
-    var isMenu by remember { mutableStateOf(true) }
-    var rows by remember { mutableStateOf("6") }
-    var columns by remember { mutableStateOf("7") }
-    var connectTarget by remember { mutableStateOf("4") }
-    var error by remember { mutableStateOf("") }
+    var state by remember {
+        mutableStateOf(
+            GameState(
+                board = null,
+                player = Cell.RED,
+                winner = Cell.EMPTY,
+                draw = false,
+                rows = "6",
+                columns = "7",
+                connectTarget = "4",
+                isMenu = true,
+                error = ""
+            )
+        )
+    }
+
+    fun currentSave() = SavedGame(state.rows,state.columns,state.connectTarget,state.player,state.winner,state.draw,state.isMenu,state.board)
 
     fun resetGame() {
-        isMenu = true
-        winner = Cell.EMPTY
-        draw = false
-        player = Cell.RED
-        board = null
-        rows = "6"
-        columns = "7"
-        connectTarget = "4"
-        error = ""
-        localStorage.removeItem("connect4-save")
+        state = state.copy(isMenu = true,
+        winner = Cell.EMPTY,
+        draw = false,
+        player = Cell.RED,
+        board = null,
+        rows = "6",
+        columns = "7",
+        connectTarget = "4",
+        error = "")
+        clearSavedGame("connect4-save")
     }
 
 
@@ -79,31 +98,31 @@ fun App() {
     LaunchedEffect(Unit) {
         val savedGame = loadGame() ?: return@LaunchedEffect
 
-        rows = savedGame.rows
-        columns = savedGame.columns
-        connectTarget = savedGame.connectTarget
-        player = savedGame.player
-        winner = savedGame.winner
-        draw = savedGame.draw
-        isMenu = savedGame.isMenu
-        board = savedGame.board
+        state = state.copy(rows = savedGame.rows,
+        columns = savedGame.columns,
+        connectTarget = savedGame.connectTarget,
+        player = savedGame.player,
+        winner = savedGame.winner,
+        draw = savedGame.draw,
+        isMenu = savedGame.isMenu,
+        board = savedGame.board)
     }
 
 
-    if (winner != Cell.EMPTY) {
-        LaunchedEffect(winner) {
+    if (state.winner != Cell.EMPTY) {
+        LaunchedEffect(state.winner) {
             delay(3000)
             resetGame()
         }
-    } else if (draw) {
-        LaunchedEffect(draw) {
+    } else if (state.draw) {
+        LaunchedEffect(state.draw) {
             delay(3000)
             resetGame()
         }
     }
 
 
-    if (isMenu) {
+    if (state.isMenu) {
         Div(attrs = {
             style {
                 display(DisplayStyle.Flex)
@@ -122,16 +141,16 @@ fun App() {
                     style {
                         width(30.px)
                     }
-                    value(rows)
-                    onInput { rows = it.value?.toString() ?: "" }
+                    value(state.rows)
+                    onInput { state = state.copy(rows = it.value?.toString() ?: "") }
                 }
                 Text("X")
                 Input(InputType.Number) {
                     style {
                         width(30.px)
                     }
-                    value(columns)
-                    onInput { columns = it.value?.toString() ?: "" }
+                    value(state.columns)
+                    onInput { state = state.copy(columns = it.value?.toString() ?: "") }
                 }
             }
             Div {
@@ -143,71 +162,71 @@ fun App() {
                     style {
                         width(30.px)
                     }
-                    value(connectTarget)
-                    onInput { connectTarget = it.value?.toString() ?: "" }
+                    value(state.connectTarget)
+                    onInput { state = state.copy(connectTarget = it.value?.toString() ?: "") }
                 }
             }
             Div {
                 Button(attrs = {
                     onClick {
-                        saveGame(SavedGame(rows,columns,connectTarget,player,winner,draw,isMenu,board))
-                        val rowsInt = rows.toIntOrNull() ?: 0
-                        val columnsInt = columns.toIntOrNull() ?: 0
-                        val connectTargetInt = connectTarget.toIntOrNull() ?: 0
+                        saveGame(currentSave())
+                        val rowsInt = state.rows.toIntOrNull() ?: 0
+                        val columnsInt = state.columns.toIntOrNull() ?: 0
+                        val connectTargetInt = state.connectTarget.toIntOrNull() ?: 0
 
 
                         if (rowsInt !in ROWS_MIN..ROWS_MAX)
-                            error = "Rows cannot be less than $ROWS_MIN and more than $ROWS_MAX"
+                            state = state.copy(error = "Rows cannot be less than $ROWS_MIN and more than $ROWS_MAX")
                         else if (columnsInt !in COLUMNS_MIN..COLUMNS_MAX)
-                            error = "Columns cannot be less than $COLUMNS_MIN and more than $COLUMNS_MAX"
+                            state = state.copy(error = "Columns cannot be less than $COLUMNS_MIN and more than $COLUMNS_MAX")
                         else if (connectTargetInt !in TARGET_MIN..TARGET_MAX)
-                            error = "Target cannot be less than Connect $TARGET_MIN and more than Connect $TARGET_MAX"
+                            state = state.copy(error = "Target cannot be less than Connect $TARGET_MIN and more than Connect $TARGET_MAX")
                         else if (connectTargetInt > columnsInt && connectTargetInt > rowsInt)
-                            error = "Target is impossible to reach"
+                            state = state.copy(error = "Target is impossible to reach")
                         else {
-                            error = ""
-                            isMenu = false
-                            board = createBoard(rowsInt, columnsInt)
+                            state = state.copy(error = "",
+                                isMenu = false,
+                                board = createBoard(rowsInt, columnsInt))
                         }
                     }
                 }) {
                     Text("Start")
                 }
             }
-            Div { Text(error) }
+            Div { Text(state.error) }
         }
     } else {
-        Game(board, player, onButtonClick = { resetGame() }, onColumnClick = { column ->
-            if (draw || winner != Cell.EMPTY) return@Game
+        Game(state.board, state.player, onButtonClick = { resetGame() }, onColumnClick = { column ->
+            if (state.draw || state.winner != Cell.EMPTY) return@Game
 
-            board?.let {
+            state.board?.let {
                 val nextBoard =
                     it.map { row -> row.toMutableList() } // assigned a new board reference so compose picks up the change
-                if (dropPiece(nextBoard, column, player)) {
-                    winner = checkWinner(nextBoard, connectTarget.toInt())
-                    if (winner != Cell.EMPTY) {
+                if (dropPiece(nextBoard, column, state.player)) {
+                    state = state.copy(winner = checkWinner(nextBoard, state.connectTarget.toInt()))
+                    if (state.winner != Cell.EMPTY) {
                         for (row in nextBoard.indices) {
                             for (column in nextBoard[row].indices) {
-                                nextBoard[row][column] = winner
+                                nextBoard[row][column] = state.winner
                             }
                         }
                     }
-                    board = nextBoard
-                    if (winner == Cell.EMPTY)
-                        player = if (player == Cell.RED) Cell.YELLOW else Cell.RED
+                    state = state.copy(board = nextBoard)
+                    if (state.winner == Cell.EMPTY)
+                        state = state.copy(player = if (state.player == Cell.RED) Cell.YELLOW else Cell.RED)
                 }
-                if (isDraw(nextBoard) && winner == Cell.EMPTY) {
+                if (isDraw(nextBoard) && state.winner == Cell.EMPTY) {
                     for (row in nextBoard.indices) {
                         for (column in nextBoard[row].indices) {
                             nextBoard[row][column] = Cell.EMPTY
                         }
                     }
-                    draw = true
+                    state = state.copy(draw = true)
                 }
             }
 
-            saveGame(SavedGame(rows,columns,connectTarget,player,winner,draw,isMenu,board))
-        }, draw = draw)
+            saveGame(currentSave())
+        }, draw = state.draw)
     }
 }
 

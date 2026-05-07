@@ -59,3 +59,7 @@ fun loadGame(): SavedGame? {
         board = board
     )
 }
+
+fun clearSavedGame(name: String){
+    localStorage.removeItem(name)
+}
