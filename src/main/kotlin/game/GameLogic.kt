@@ -5,15 +5,11 @@ enum class Cell {
 }
 
 fun createBoard(
-    rows: Int,
-    columns: Int
-): List<MutableList<Cell>> =
-    MutableList(rows) { MutableList(columns) { Cell.EMPTY } }
+    rows: Int, columns: Int
+): List<MutableList<Cell>> = MutableList(rows) { MutableList(columns) { Cell.EMPTY } }
 
 fun dropPiece(
-    board: List<MutableList<Cell>>,
-    column: Int,
-    color: Cell
+    board: List<MutableList<Cell>>, column: Int, color: Cell
 ): Boolean {
     if (column !in board[0].indices) return false
     for (row in board.lastIndex downTo 0) {
@@ -26,19 +22,21 @@ fun dropPiece(
 }
 
 fun checkWinner(
-    board: List<MutableList<Cell>>,
-    requirement: Int
+    board: List<MutableList<Cell>>, requirement: Int
 ): Cell {
     for (row in board.indices) {
         for (column in board[row].indices) {
             val cell = board[row][column]
             if (cell == Cell.EMPTY) continue
-            if (hasLine(row, column, 0, 1, board, requirement) ||
-                hasLine(row, column, 1, 0, board, requirement) ||
-                hasLine(row, column, 1, 1, board, requirement) ||
-                hasLine(row, column, 1, -1, board, requirement)
-            )
-                return cell
+            if (hasLine(row, column, 0, 1, board, requirement) || hasLine(
+                    row,
+                    column,
+                    1,
+                    0,
+                    board,
+                    requirement
+                ) || hasLine(row, column, 1, 1, board, requirement) || hasLine(row, column, 1, -1, board, requirement)
+            ) return cell
         }
     }
 
@@ -50,16 +48,10 @@ fun isDraw(board: List<MutableList<Cell>>): Boolean {
 }
 
 fun hasLine(
-    startRow: Int,
-    startColumn: Int,
-    rowStep: Int,
-    colStep: Int,
-    board: List<MutableList<Cell>>,
-    requirement: Int
+    startRow: Int, startColumn: Int, rowStep: Int, colStep: Int, board: List<MutableList<Cell>>, requirement: Int
 ): Boolean {
     val value: Cell = board[startRow][startColumn]
-    if (value == Cell.EMPTY)
-        return false
+    if (value == Cell.EMPTY) return false
 
     var counter: Int = requirement - 1
     var searchRow = startRow + rowStep
@@ -68,8 +60,7 @@ fun hasLine(
         if (searchRow !in board.indices || searchColumn !in board[searchRow].indices) return false
 
         val searchValue = board[searchRow][searchColumn]
-        if (searchValue == Cell.EMPTY || searchValue != value)
-            return false
+        if (searchValue == Cell.EMPTY || searchValue != value) return false
 
         searchRow += rowStep
         searchColumn += colStep

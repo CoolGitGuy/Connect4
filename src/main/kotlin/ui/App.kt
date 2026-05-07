@@ -3,10 +3,9 @@ package ui
 import androidx.compose.runtime.*
 import game.*
 import kotlinx.coroutines.delay
-import persistence.SavedGame
 import persistence.clearSavedGame
-import persistence.loadGame
-import persistence.saveGame
+import persistence.loadState
+import persistence.saveState
 
 const val ROWS_MIN = 4
 const val ROWS_MAX = 20
@@ -47,22 +46,10 @@ fun App() {
         )
     }
 
-    fun currentSave() = SavedGame(
-        state.rows,
-        state.columns,
-        state.connectTarget,
-        state.player,
-        state.winner,
-        state.draw,
-        state.isMenu,
-        state.board
-    )
-
     fun handleColumnClick(column: Int) {
         state = applyMove(state, column)
-        saveGame(currentSave())
+        saveState(state)
     }
-
 
     fun resetGame() {
         state = state.copy(
@@ -76,22 +63,12 @@ fun App() {
             connectTarget = "4",
             error = ""
         )
-        clearSavedGame("connect4-save")
+        clearSavedGame()
     }
 
     LaunchedEffect(Unit) {
-        val savedGame = loadGame() ?: return@LaunchedEffect
-
-        state = state.copy(
-            rows = savedGame.rows,
-            columns = savedGame.columns,
-            connectTarget = savedGame.connectTarget,
-            player = savedGame.player,
-            winner = savedGame.winner,
-            draw = savedGame.draw,
-            isMenu = savedGame.isMenu,
-            board = savedGame.board
-        )
+        val savedGame = loadState()
+        state = savedGame
     }
 
     if (state.winner != Cell.EMPTY) {
@@ -113,14 +90,14 @@ fun App() {
             onColumnsChanged = { state = state.copy(columns = it) },
             onConnectTargetChanged = { state = state.copy(connectTarget = it) },
             onButtonClick = {
-                saveGame(currentSave())
+                saveState(state)
                 val rowsInt = state.rows.toIntOrNull() ?: 0
                 val columnsInt = state.columns.toIntOrNull() ?: 0
 
                 val error = getValidationError(state)
                 state = state.copy(error = error)
-                if (error.isEmpty())
-                    state = state.copy(error = "", isMenu = false, board = createBoard(rowsInt, columnsInt))
+                if (error.isEmpty()) state =
+                    state.copy(error = "", isMenu = false, board = createBoard(rowsInt, columnsInt))
             },
         )
     } else {

@@ -2,6 +2,7 @@ package persistence
 
 import game.Cell
 import kotlinx.browser.localStorage
+import ui.GameState
 
 
 data class SavedGame(
@@ -16,8 +17,7 @@ data class SavedGame(
 )
 
 fun saveGame(save: SavedGame) {
-    val boardString = save.board
-        ?.joinToString("|") { row ->
+    val boardString = save.board?.joinToString("|") { row ->
             row.joinToString(",") { cell ->
                 cell.name
             }
@@ -60,6 +60,37 @@ fun loadGame(): SavedGame? {
     )
 }
 
-fun clearSavedGame(name: String) {
+fun saveState(state: GameState) {
+    saveGame(
+        SavedGame(
+            state.rows,
+            state.columns,
+            state.connectTarget,
+            state.player,
+            state.winner,
+            state.draw,
+            state.isMenu,
+            state.board
+        )
+    )
+}
+
+fun loadState(): GameState {
+    val game = loadGame()
+
+    return GameState(
+        rows = game?.rows ?: "6",
+        columns = game?.columns ?: "7",
+        connectTarget = game?.connectTarget ?: "4",
+        player = game?.player ?: Cell.RED,
+        winner = game?.winner ?: Cell.EMPTY,
+        draw = game?.draw ?: false,
+        isMenu = game?.isMenu ?: true,
+        board = game?.board,
+        error = "",
+    )
+}
+
+fun clearSavedGame(name: String = "connect4-save") {
     localStorage.removeItem(name)
 }
