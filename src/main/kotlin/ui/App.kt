@@ -35,6 +35,9 @@ import org.jetbrains.compose.web.dom.H1
 import org.jetbrains.compose.web.dom.H2
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Text
+import persistance.SavedGame
+import persistance.loadGame
+import persistance.saveGame
 
 const val ROWS_MIN = 4
 const val ROWS_MAX = 20
@@ -71,51 +74,21 @@ fun App() {
         localStorage.removeItem("connect4-save")
     }
 
-    fun saveGame() {
-        val boardString = board
-            ?.joinToString("|") { row ->
-                row.joinToString(",") { cell ->
-                    cell.name
-                }
-            } ?: ""
 
-        val saveString = listOf(
-            rows,
-            columns,
-            connectTarget,
-            player.name,
-            winner.name,
-            draw.toString(),
-            isMenu.toString(),
-            boardString
-        ).joinToString(";")
-
-        localStorage.setItem("connect4-save", saveString)
-    }
-
-    fun loadGame() {
-        val saved = localStorage.getItem("connect4-save") ?: return
-        val parts = saved.split(";")
-
-        rows = parts[0]
-        columns = parts[1]
-        connectTarget = parts[2]
-        player = Cell.valueOf(parts[3])
-        winner = Cell.valueOf(parts[4])
-        draw = parts[5].toBoolean()
-        isMenu = parts[6].toBoolean()
-
-        val boardString: String = parts[7]
-        board = boardString.split("|").map { rowString ->
-            rowString.split(",").map { cellString ->
-                Cell.valueOf(cellString)
-            }.toMutableList()
-        }
-    }
 
     LaunchedEffect(Unit) {
-        loadGame()
+        val savedGame = loadGame() ?: return@LaunchedEffect
+
+        rows = savedGame.rows
+        columns = savedGame.columns
+        connectTarget = savedGame.connectTarget
+        player = savedGame.player
+        winner = savedGame.winner
+        draw = savedGame.draw
+        isMenu = savedGame.isMenu
+        board = savedGame.board
     }
+
 
     if (winner != Cell.EMPTY) {
         LaunchedEffect(winner) {
@@ -177,7 +150,7 @@ fun App() {
             Div {
                 Button(attrs = {
                     onClick {
-                        saveGame()
+                        saveGame(SavedGame(rows,columns,connectTarget,player,winner,draw,isMenu,board))
                         val rowsInt = rows.toIntOrNull() ?: 0
                         val columnsInt = columns.toIntOrNull() ?: 0
                         val connectTargetInt = connectTarget.toIntOrNull() ?: 0
@@ -232,10 +205,13 @@ fun App() {
                     draw = true
                 }
             }
-            saveGame()
+
+            saveGame(SavedGame(rows,columns,connectTarget,player,winner,draw,isMenu,board))
         }, draw = draw)
     }
 }
+
+
 
 @Composable
 private fun Game(
