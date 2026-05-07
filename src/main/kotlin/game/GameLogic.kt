@@ -4,13 +4,17 @@ enum class Cell {
     EMPTY, RED, YELLOW
 }
 
-fun createBoard(rows: Int,
-                columns: Int): List<MutableList<Cell>> =
+fun createBoard(
+    rows: Int,
+    columns: Int
+): List<MutableList<Cell>> =
     MutableList(rows) { MutableList(columns) { Cell.EMPTY } }
 
-fun dropPiece(board: List<MutableList<Cell>>,
-              column: Int,
-              color: Cell): Boolean {
+fun dropPiece(
+    board: List<MutableList<Cell>>,
+    column: Int,
+    color: Cell
+): Boolean {
     if (column !in board[0].indices) return false
     for (row in board.lastIndex downTo 0) {
         if (board[row][column] == Cell.EMPTY) {
@@ -21,8 +25,10 @@ fun dropPiece(board: List<MutableList<Cell>>,
     return false
 }
 
-fun checkWinner(board: List<MutableList<Cell>>,
-                requirement: Int): Cell {
+fun checkWinner(
+    board: List<MutableList<Cell>>,
+    requirement: Int
+): Cell {
     for (row in board.indices) {
         for (column in board[row].indices) {
             val cell = board[row][column]

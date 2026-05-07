@@ -1,4 +1,4 @@
-package persistance
+package persistence
 
 import game.Cell
 import kotlinx.browser.localStorage
@@ -60,6 +60,6 @@ fun loadGame(): SavedGame? {
     )
 }
 
-fun clearSavedGame(name: String){
+fun clearSavedGame(name: String) {
     localStorage.removeItem(name)
 }
