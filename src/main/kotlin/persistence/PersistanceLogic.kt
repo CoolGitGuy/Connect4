@@ -18,10 +18,10 @@ data class SavedGame(
 
 fun saveGame(save: SavedGame) {
     val boardString = save.board?.joinToString("|") { row ->
-            row.joinToString(",") { cell ->
-                cell.name
-            }
-        } ?: ""
+        row.joinToString(",") { cell ->
+            cell.name
+        }
+    } ?: ""
 
     val saveString = listOf(
         save.rows,
