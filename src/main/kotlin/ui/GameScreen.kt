@@ -2,7 +2,6 @@ package ui
 
 import androidx.compose.runtime.Composable
 import game.Cell
-import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Div
 import org.jetbrains.compose.web.dom.Text
@@ -16,52 +15,54 @@ fun GameScreen(
     onButtonClick: () -> Unit,
     draw: Boolean
 ) {
-    Div {
-        Button(attrs = {
-            style {
-                width(100.percent)
-            }
-            onClick { onButtonClick() }
-        }) { Text("Back To Main Menu") }
-    }
     Div(attrs = {
-        style {
-            width(100.percent)
-            property("overflow-x", "auto")
-        }
+        classes("page", "game-page")
     }) {
-        board?.forEach { row ->
+        Div(
+            attrs = {
+                classes("game-card")
+            }
+        ) {
             Div(attrs = {
-                style {
-                    display(DisplayStyle.Flex)
-                    justifyContent(JustifyContent.Center)
-                }
+                classes("game-actions")
             }) {
-                row.forEachIndexed { columnIndex, cell ->
-                    val color = when (cell) {
-                        Cell.EMPTY -> Color.gray
-                        Cell.RED -> Color.red
-                        else -> Color.yellow
+                Button(attrs = {
+                    classes("menu-button")
+                    onClick { onButtonClick() }
+                }) { Text("Back To Main Menu") }
+            }
+            Div(attrs = {
+                classes("board-scroll")
+            }) {
+                Div(
+                    attrs = {
+                        classes("connect-board")
                     }
-                    Div(attrs = {
-                        style {
-                            width(70.px)
-                            height(70.px)
-                            borderRadius(50.percent)
-                            backgroundColor(color)
+                ) {
+                    board?.forEach { row ->
+                        Div(attrs = {
+                            classes("board-row")
+                        }) {
+                            row.forEachIndexed { columnIndex, cell ->
+                                val cellClass = when (cell) {
+                                    Cell.EMPTY -> "cell-empty"
+                                    Cell.RED -> "cell-red"
+                                    else -> "cell-yellow"
+                                }
+                                Div(attrs = {
+                                    classes("board-cell", cellClass)
+                                    onClick {
+                                        onColumnClick(columnIndex)
+                                    }
+                                })
+                            }
                         }
-                        onClick {
-                            onColumnClick(columnIndex)
-                        }
-                    })
+                    }
                 }
             }
+            Div(attrs = {
+                classes("game-status")
+            }) { Text(if (draw) "Game ended in a draw" else "Current player: ${player.name}") }
         }
     }
-    Div(attrs = {
-        style {
-            display(DisplayStyle.Flex)
-            justifyContent(JustifyContent.Center)
-        }
-    }) { Text(if (draw) "Game ended in a draw" else "Current player: ${player.name}") }
 }
