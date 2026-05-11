@@ -13,7 +13,9 @@ fun GameScreen(
     player: Cell,
     onColumnClick: (Int) -> Unit,
     onButtonClick: () -> Unit,
-    draw: Boolean
+    draw: Boolean,
+    lastPlayedRow: Int?,
+    lastPlayedColumn: Int?
 ) {
     Div(attrs = {
         classes("page", "game-page")
@@ -39,7 +41,7 @@ fun GameScreen(
                         classes("connect-board")
                     }
                 ) {
-                    board?.forEach { row ->
+                    board?.forEachIndexed { rowIndex, row ->
                         Div(attrs = {
                             classes("board-row")
                         }) {
@@ -51,6 +53,9 @@ fun GameScreen(
                                 }
                                 Div(attrs = {
                                     classes("board-cell", cellClass)
+                                    if (rowIndex == lastPlayedRow && columnIndex == lastPlayedColumn) {
+                                        classes("cell-drop")
+                                    }
                                     onClick {
                                         onColumnClick(columnIndex)
                                     }

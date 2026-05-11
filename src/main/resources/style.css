@@ -136,6 +136,10 @@ html, body {
     cursor: pointer;
 }
 
+.cell-drop {
+    animation: piece-drop 0.28s ease-out;
+}
+
 .cell-empty {
     background: #222831;
 }
@@ -152,4 +156,14 @@ html, body {
     text-align: center;
     font-weight: 600;
     color: #EEEEEE;
+}
+
+@keyframes piece-drop {
+    from {
+        transform: translateY(-10px) scale(0.96);
+    }
+
+    to {
+        transform: translateY(0) scale(1);
+    }
 }

@@ -25,7 +25,9 @@ data class GameState(
     val columns: String,
     val connectTarget: String,
     val isMenu: Boolean,
-    val error: String
+    val error: String,
+    val lastPlayedRow: Int?,
+    val lastPlayedColumn: Int?
 )
 
 @Composable
@@ -41,7 +43,9 @@ fun App() {
                 columns = "7",
                 connectTarget = "4",
                 isMenu = true,
-                error = ""
+                error = "",
+                lastPlayedRow = null,
+                lastPlayedColumn = null
             )
         )
     }
@@ -61,7 +65,9 @@ fun App() {
             rows = "6",
             columns = "7",
             connectTarget = "4",
-            error = ""
+            error = "",
+            lastPlayedRow = null,
+            lastPlayedColumn = null
         )
         clearSavedGame()
     }
@@ -97,7 +103,13 @@ fun App() {
                 val error = getValidationError(state)
                 state = state.copy(error = error)
                 if (error.isEmpty()) state =
-                    state.copy(error = "", isMenu = false, board = createBoard(rowsInt, columnsInt))
+                    state.copy(
+                        error = "",
+                        isMenu = false,
+                        board = createBoard(rowsInt, columnsInt),
+                        lastPlayedRow = null,
+                        lastPlayedColumn = null
+                    )
             },
         )
     } else {
@@ -106,7 +118,9 @@ fun App() {
             player = state.player,
             onButtonClick = { resetGame() },
             onColumnClick = { handleColumnClick(it) },
-            draw = state.draw
+            draw = state.draw,
+            lastPlayedRow = state.lastPlayedRow,
+            lastPlayedColumn = state.lastPlayedColumn
         )
     }
 }
@@ -128,8 +142,9 @@ private fun applyMove(state: GameState, column: Int): GameState {
 
     val board = state.board ?: return state
     val nextBoard = board.map { row -> row.toMutableList() }
+    val playedRow = findDropRow(nextBoard, column)
 
-    if (!dropPiece(nextBoard, column, state.player)) return state
+    if (playedRow == null || !dropPiece(nextBoard, column, state.player)) return state
 
     val winner = checkWinner(nextBoard, state.connectTarget.toInt())
     if (winner != Cell.EMPTY) {
@@ -138,7 +153,12 @@ private fun applyMove(state: GameState, column: Int): GameState {
                 nextBoard[row][col] = winner
             }
         }
-        return state.copy(board = nextBoard, winner = winner)
+        return state.copy(
+            board = nextBoard,
+            winner = winner,
+            lastPlayedRow = playedRow,
+            lastPlayedColumn = column
+        )
     }
 
     if (isDraw(nextBoard)) {
@@ -147,9 +167,26 @@ private fun applyMove(state: GameState, column: Int): GameState {
                 nextBoard[row][col] = Cell.EMPTY
             }
         }
-        return state.copy(board = nextBoard, draw = true)
+        return state.copy(
+            board = nextBoard,
+            draw = true,
+            lastPlayedRow = playedRow,
+            lastPlayedColumn = column
+        )
     }
 
     val nextPlayer = if (state.player == Cell.RED) Cell.YELLOW else Cell.RED
-    return state.copy(board = nextBoard, player = nextPlayer)
+    return state.copy(
+        board = nextBoard,
+        player = nextPlayer,
+        lastPlayedRow = playedRow,
+        lastPlayedColumn = column
+    )
+}
+
+private fun findDropRow(board: List<MutableList<Cell>>, column: Int): Int? {
+    for (row in board.lastIndex downTo 0) {
+        if (board[row][column] == Cell.EMPTY) return row
+    }
+    return null
 }

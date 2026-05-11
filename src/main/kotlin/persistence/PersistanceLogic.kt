@@ -88,6 +88,8 @@ fun loadState(): GameState {
         isMenu = game?.isMenu ?: true,
         board = game?.board,
         error = "",
+        lastPlayedRow = null,
+        lastPlayedColumn = null,
     )
 }
 
