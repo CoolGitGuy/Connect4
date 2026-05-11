@@ -1,40 +1,11 @@
 package ui
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import game.Cell
-import game.checkWinner
-import game.createBoard
-import game.dropPiece
-import game.isDraw
-import kotlinx.browser.localStorage
+import androidx.compose.runtime.*
+import game.*
 import kotlinx.coroutines.delay
-import org.jetbrains.compose.web.attributes.InputType
-import org.jetbrains.compose.web.css.AlignItems
-import org.jetbrains.compose.web.css.Color
-import org.jetbrains.compose.web.css.DisplayStyle
-import org.jetbrains.compose.web.css.FlexDirection
-import org.jetbrains.compose.web.css.JustifyContent
-import org.jetbrains.compose.web.css.alignItems
-import org.jetbrains.compose.web.css.backgroundColor
-import org.jetbrains.compose.web.css.borderRadius
-import org.jetbrains.compose.web.css.display
-import org.jetbrains.compose.web.css.flexDirection
-import org.jetbrains.compose.web.css.height
-import org.jetbrains.compose.web.css.justifyContent
-import org.jetbrains.compose.web.css.percent
-import org.jetbrains.compose.web.css.px
-import org.jetbrains.compose.web.css.width
-import org.jetbrains.compose.web.dom.Button
-import org.jetbrains.compose.web.dom.Div
-import org.jetbrains.compose.web.dom.H1
-import org.jetbrains.compose.web.dom.H2
-import org.jetbrains.compose.web.dom.Input
-import org.jetbrains.compose.web.dom.Text
+import persistence.clearSavedGame
+import persistence.loadState
+import persistence.saveState
 
 const val ROWS_MIN = 4
 const val ROWS_MAX = 20
@@ -45,254 +16,177 @@ const val COLUMNS_MAX = 20
 const val TARGET_MIN = 4
 const val TARGET_MAX = 10
 
+data class GameState(
+    val board: List<MutableList<Cell>>?,
+    val player: Cell,
+    val winner: Cell,
+    val draw: Boolean,
+    val rows: String,
+    val columns: String,
+    val connectTarget: String,
+    val isMenu: Boolean,
+    val error: String,
+    val lastPlayedRow: Int?,
+    val lastPlayedColumn: Int?
+)
 
 @Composable
 fun App() {
-    var winner by remember { mutableStateOf(Cell.EMPTY) }
-    var draw by remember { mutableStateOf(false) }
-    var player by remember { mutableStateOf(Cell.RED) }
-    var board: List<MutableList<Cell>>? by remember { mutableStateOf(null) }
-    var isMenu by remember { mutableStateOf(true) }
-    var rows by remember { mutableStateOf("6") }
-    var columns by remember { mutableStateOf("7") }
-    var connectTarget by remember { mutableStateOf("4") }
-    var error by remember { mutableStateOf("") }
+    var state by remember {
+        mutableStateOf(
+            GameState(
+                board = null,
+                player = Cell.RED,
+                winner = Cell.EMPTY,
+                draw = false,
+                rows = "6",
+                columns = "7",
+                connectTarget = "4",
+                isMenu = true,
+                error = "",
+                lastPlayedRow = null,
+                lastPlayedColumn = null
+            )
+        )
+    }
+
+    fun handleColumnClick(column: Int) {
+        state = applyMove(state, column)
+        saveState(state)
+    }
 
     fun resetGame() {
-        isMenu = true
-        winner = Cell.EMPTY
-        draw = false
-        player = Cell.RED
-        board = null
-        rows = "6"
-        columns = "7"
-        connectTarget = "4"
-        error = ""
-        localStorage.removeItem("connect4-save")
-    }
-
-    fun saveGame() {
-        val boardString = board
-            ?.joinToString("|") { row ->
-                row.joinToString(",") { cell ->
-                    cell.name
-                }
-            } ?: ""
-
-        val saveString = listOf(
-            rows,
-            columns,
-            connectTarget,
-            player.name,
-            winner.name,
-            draw.toString(),
-            isMenu.toString(),
-            boardString
-        ).joinToString(";")
-
-        localStorage.setItem("connect4-save", saveString)
-    }
-
-    fun loadGame() {
-        val saved = localStorage.getItem("connect4-save") ?: return
-        val parts = saved.split(";")
-
-        rows = parts[0]
-        columns = parts[1]
-        connectTarget = parts[2]
-        player = Cell.valueOf(parts[3])
-        winner = Cell.valueOf(parts[4])
-        draw = parts[5].toBoolean()
-        isMenu = parts[6].toBoolean()
-
-        val boardString :String  = parts[7]
-        board = boardString.split("|").map { rowString ->
-            rowString.split(",").map { cellString ->
-                Cell.valueOf(cellString)
-            }.toMutableList()
-        }
+        state = state.copy(
+            isMenu = true,
+            winner = Cell.EMPTY,
+            draw = false,
+            player = Cell.RED,
+            board = null,
+            rows = "6",
+            columns = "7",
+            connectTarget = "4",
+            error = "",
+            lastPlayedRow = null,
+            lastPlayedColumn = null
+        )
+        clearSavedGame()
     }
 
     LaunchedEffect(Unit) {
-        loadGame()
+        val savedGame = loadState()
+        state = savedGame
     }
 
-    if(winner != Cell.EMPTY) {
-        LaunchedEffect(winner) {
+    if (state.winner != Cell.EMPTY) {
+        LaunchedEffect(state.winner) {
             delay(3000)
             resetGame()
         }
-    } else if(draw) {
-        LaunchedEffect(draw) {
+    } else if (state.draw) {
+        LaunchedEffect(state.draw) {
             delay(3000)
             resetGame()
         }
     }
 
+    if (state.isMenu) {
+        MenuScreen(
+            state,
+            onRowsChanged = { state = state.copy(rows = it) },
+            onColumnsChanged = { state = state.copy(columns = it) },
+            onConnectTargetChanged = { state = state.copy(connectTarget = it) },
+            onButtonClick = {
+                saveState(state)
+                val rowsInt = state.rows.toIntOrNull() ?: 0
+                val columnsInt = state.columns.toIntOrNull() ?: 0
 
-    if(isMenu) {
-        Div(attrs = {
-            style {
-                display(DisplayStyle.Flex)
-                flexDirection(FlexDirection.Column)
-                alignItems(AlignItems.Center)
-            }
-        }) {
-            Div {
-                H1 { Text("Connect 4") }
-            }
-            Div {
-                H2 { Text("Field Size") }
-            }
-            Div {
-                Input(InputType.Number) {
-                    style {
-                        width(30.px)
-                    }
-                    value(rows)
-                    onInput { rows = it.value?.toString() ?: "" }
-                }
-                Text("X")
-                Input(InputType.Number) {
-                    style {
-                        width(30.px)
-                    }
-                    value(columns)
-                    onInput { columns = it.value?.toString() ?: "" }
-                }
-            }
-            Div {
-                H2 { Text("Win Condition") }
-            }
-            Div {
-                Text("Connect")
-                Input(InputType.Number) {
-                    style {
-                        width(30.px)
-                    }
-                    value(connectTarget)
-                    onInput { connectTarget = it.value?.toString() ?: "" }
-                }
-            }
-            Div {
-                Button(attrs = {
-                    onClick {
-                        saveGame()
-                        val rowsInt = rows.toIntOrNull() ?: 0
-                        val columnsInt = columns.toIntOrNull() ?: 0
-                        val connectTargetInt = connectTarget.toIntOrNull() ?: 0
-
-
-                        if(rowsInt !in ROWS_MIN..ROWS_MAX)
-                            error = "Rows cannot be less than $ROWS_MIN and more than $ROWS_MAX"
-                        else if(columnsInt !in COLUMNS_MIN..COLUMNS_MAX)
-                            error = "Columns cannot be less than $COLUMNS_MIN and more than $COLUMNS_MAX"
-                        else if(connectTargetInt !in TARGET_MIN..TARGET_MAX)
-                            error = "Target cannot be less than Connect $TARGET_MIN and more than Connect $TARGET_MAX"
-                        else if(connectTargetInt > columnsInt && connectTargetInt > rowsInt)
-                            error = "Target is impossible to reach"
-                        else {
-                            error = ""
-                            isMenu = false
-                            board = createBoard(rowsInt, columnsInt)
-                        }
-                    }
-                }) {
-                    Text("Start")
-                }
-            }
-            Div { Text(error) }
-        }
+                val error = getValidationError(state)
+                state = state.copy(error = error)
+                if (error.isEmpty()) state =
+                    state.copy(
+                        error = "",
+                        isMenu = false,
+                        board = createBoard(rowsInt, columnsInt),
+                        lastPlayedRow = null,
+                        lastPlayedColumn = null
+                    )
+            },
+        )
     } else {
-        Game(board, player, onButtonClick = { resetGame() }, onColumnClick = { column ->
-            if(draw || winner != Cell.EMPTY) return@Game
-
-            board?.let {
-                val nextBoard =
-                    it.map { row -> row.toMutableList() } // assigned a new board reference so compose picks up the change
-                if(dropPiece(nextBoard, column, player)) {
-                    winner = checkWinner(nextBoard, connectTarget.toInt())
-                    if(winner != Cell.EMPTY) {
-                        for (row in nextBoard.indices) {
-                            for (column in nextBoard[row].indices) {
-                                nextBoard[row][column] = winner
-                            }
-                        }
-                    }
-                    board = nextBoard
-                    if(winner == Cell.EMPTY)
-                        player = if(player == Cell.RED) Cell.YELLOW else Cell.RED
-                }
-                if(isDraw(nextBoard) && winner == Cell.EMPTY) {
-                    for (row in nextBoard.indices) {
-                        for (column in nextBoard[row].indices) {
-                            nextBoard[row][column] = Cell.EMPTY
-                        }
-                    }
-                    draw = true
-                }
-            }
-            saveGame()
-        }, draw = draw)
+        GameScreen(
+            board = state.board,
+            player = state.player,
+            onButtonClick = { resetGame() },
+            onColumnClick = { handleColumnClick(it) },
+            draw = state.draw,
+            lastPlayedRow = state.lastPlayedRow,
+            lastPlayedColumn = state.lastPlayedColumn
+        )
     }
 }
 
-@Composable
-private fun Game(
-    board: List<MutableList<Cell>>?,
-    player: Cell,
-    onColumnClick: (Int) -> Unit,
-    onButtonClick: () -> Unit,
-    draw: Boolean
-) {
-    Div {
-        Button(attrs = {
-            style {
-                width(100.percent)
-            }
-            onClick { onButtonClick() }
-        }) { Text("Back To Main Menu") }
-    }
+private fun getValidationError(state: GameState): String {
+    val rowsInt = state.rows.toIntOrNull() ?: 0
+    val columnsInt = state.columns.toIntOrNull() ?: 0
+    val connectTargetInt = state.connectTarget.toIntOrNull() ?: 0
 
-    Div(attrs = {
-        style {
-            width(100.percent)
-            property("overflow-x", "auto")
-        }
-    }) {
-        board?.forEach { row ->
-            Div(attrs = {
-                style {
-                    display(DisplayStyle.Flex)
-                    justifyContent(JustifyContent.Center)
-                }
-            }) {
-                row.forEachIndexed { columnIndex, cell ->
-                    val color = when (cell) {
-                        Cell.EMPTY -> Color.gray
-                        Cell.RED -> Color.red
-                        else -> Color.yellow
-                    }
-                    Div(attrs = {
-                        style {
-                            width(70.px)
-                            height(70.px)
-                            borderRadius(50.percent)
-                            backgroundColor(color)
-                        }
-                        onClick {
-                            onColumnClick(columnIndex)
-                        }
-                    })
-                }
+    return if (rowsInt !in ROWS_MIN..ROWS_MAX) "Rows cannot be less than $ROWS_MIN and more than $ROWS_MAX"
+    else if (columnsInt !in COLUMNS_MIN..COLUMNS_MAX) "Columns cannot be less than $COLUMNS_MIN and more than $COLUMNS_MAX"
+    else if (connectTargetInt !in TARGET_MIN..TARGET_MAX) "Target cannot be less than Connect $TARGET_MIN and more than Connect $TARGET_MAX"
+    else if (connectTargetInt > columnsInt && connectTargetInt > rowsInt) "Target is impossible to reach"
+    else ""
+}
+
+private fun applyMove(state: GameState, column: Int): GameState {
+    if (state.draw || state.winner != Cell.EMPTY) return state
+
+    val board = state.board ?: return state
+    val nextBoard = board.map { row -> row.toMutableList() }
+    val playedRow = findDropRow(nextBoard, column)
+
+    if (playedRow == null || !dropPiece(nextBoard, column, state.player)) return state
+
+    val winner = checkWinner(nextBoard, state.connectTarget.toInt())
+    if (winner != Cell.EMPTY) {
+        for (row in nextBoard.indices) {
+            for (col in nextBoard[row].indices) {
+                nextBoard[row][col] = winner
             }
         }
+        return state.copy(
+            board = nextBoard,
+            winner = winner,
+            lastPlayedRow = playedRow,
+            lastPlayedColumn = column
+        )
     }
 
-    Div(attrs = {
-        style {
-            display(DisplayStyle.Flex)
-            justifyContent(JustifyContent.Center)
+    if (isDraw(nextBoard)) {
+        for (row in nextBoard.indices) {
+            for (col in nextBoard[row].indices) {
+                nextBoard[row][col] = Cell.EMPTY
+            }
         }
-    }) { Text(if(draw) "Game ended in a draw" else "Current player: ${player.name}") }
+        return state.copy(
+            board = nextBoard,
+            draw = true,
+            lastPlayedRow = playedRow,
+            lastPlayedColumn = column
+        )
+    }
+
+    val nextPlayer = if (state.player == Cell.RED) Cell.YELLOW else Cell.RED
+    return state.copy(
+        board = nextBoard,
+        player = nextPlayer,
+        lastPlayedRow = playedRow,
+        lastPlayedColumn = column
+    )
+}
+
+private fun findDropRow(board: List<MutableList<Cell>>, column: Int): Int? {
+    for (row in board.lastIndex downTo 0) {
+        if (board[row][column] == Cell.EMPTY) return row
+    }
+    return null
 }
