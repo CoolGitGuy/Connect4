@@ -57,3 +57,13 @@ Run the JavaScript test suite:
 ## Notes
 
 The UI is implemented with Compose HTML and styled through a linked CSS file in `src/main/resources/style.css`.
+
+## Project Pictures
+Menu:
+<img width="1920" height="959" alt="screencapture-localhost-8080-2026-05-11-09_37_05" src="https://github.com/user-attachments/assets/8fce4f6d-8364-477d-b6dd-b5cba2f1808c" />
+Game:
+<img width="1920" height="959" alt="screencapture-localhost-8080-2026-05-11-09_40_00 (2)" src="https://github.com/user-attachments/assets/3ad80338-3c53-45f6-a988-78549a9c8da3" />
+
+
+
+
